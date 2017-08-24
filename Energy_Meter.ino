@@ -8,5 +8,6 @@ void setup() {
 }
 
 void loop() {
+    // loop for sending radio communication
 
 }
