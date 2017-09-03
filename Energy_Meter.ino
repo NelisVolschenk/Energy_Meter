@@ -3,6 +3,10 @@
 //todo Project description
 
 // System specific constants
+#define V1CAL 300 //
+#define I1LAG 400 // Calibration value for how much I1 lags V1
+#define I2LAG 400 // Calibration value for how much I2 lags V2
+#define I3LAG 400 // Calibration value for how much I3 lags V3
 
 
 // General constants
