@@ -179,7 +179,7 @@ void calculateVIPF(){
     RealPower3 = (V3RATIO * I3RATIO * (float)TotalP3)/LOOPSAMPLES;
     ApparentPower1 = V1rms * I1rms;
     ApparentPower2 = V2rms * I2rms;
-    ApparentPower3 = V3rms * I2rms;
+    ApparentPower3 = V3rms * I3rms;
     PowerFactor1 = RealPower1 / ApparentPower1;
     PowerFactor2 = RealPower2 / ApparentPower2;
     PowerFactor3 = RealPower3 / ApparentPower3;
