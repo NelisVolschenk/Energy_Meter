@@ -61,7 +61,7 @@ long SumV1Squared, SumV2Squared, SumV3Squared, SumI1Squared, SumI2Squared, SumI3
 long CycleV1Squared, CycleV2Squared, CycleV3Squared, CycleI1Squared, CycleI2Squared, CycleI3Squared;
 long CycleP1, CycleP2, CycleP3;
 long TotalV1Squared, TotalV2Squared, TotalV3Squared, TotalI1Squared, TotalI2Squared, TotalI3Squared;
-long TotalP1, TotalP2, TotalP3, TotalP1Export, TotalP2Export, TotalP3Export;
+long TotalP1Import, TotalP2Import, TotalP3Import, TotalP1Export, TotalP2Export, TotalP3Export;
 long SumP1, SumP2, SumP3;
 int I1PhaseShift, I2PhaseShift, I3PhaseShift;
 byte SampleNum;
@@ -71,11 +71,11 @@ boolean NewCycle;
 int CycleCount;
 long SumTimerCount;
 float V1rms,V2rms,V3rms,I1rms,I2rms,I3rms;
-float RealPower1, RealPower2, RealPower3, ApparentPower1, ApparentPower2, ApparentPower3;
+float RealPower1Import, RealPower2Import, RealPower3Import, RealPower1Export, RealPower2Export, RealPower3Export;
+float ApparentPower1, ApparentPower2, ApparentPower3;
 float PowerFactor1, PowerFactor2, PowerFactor3;
 float Frequency;
-
-
+long Units1, Units2, Units3; // Available Power Units in mWh
 
 
 /*  This will synchronize the timer to the V1 frequency and perform all needed calculations at the end of each cycle
@@ -155,9 +155,21 @@ void addcycle () {
     TotalI1Squared += CycleI1Squared;
     TotalI2Squared += CycleI2Squared;
     TotalI3Squared += CycleI3Squared;
-    TotalP1 += CycleP1;
-    TotalP2 += CycleP2;
-    TotalP3 += CycleP3;
+    if (CycleP1>=0){
+        TotalP1Import += CycleP1;
+    } else {
+        TotalP1Export -= CycleP1;
+    }
+    if (CycleP2>=0){
+        TotalP2Import += CycleP2;
+    } else {
+        TotalP2Export -= CycleP2;
+    }
+    if (CycleP3>=0){
+        TotalP3Import += CycleP3;
+    } else {
+        TotalP3Export -= CycleP3;
+    }
     SumTimerCount += (OCR1A+1);
 
     CycleCount++;
@@ -167,24 +179,27 @@ void addcycle () {
 
 void calculateVIPF(){
 
-    V1rms = V1RATIO * sqrt(((float)TotalV1Squared)/LOOPSAMPLES);
-    V2rms = V2RATIO * sqrt(((float)TotalV2Squared)/LOOPSAMPLES);
-    V3rms = V3RATIO * sqrt(((float)TotalV3Squared)/LOOPSAMPLES);
-    I1rms = I1RATIO * sqrt(((float)TotalI1Squared)/LOOPSAMPLES);
-    I2rms = I2RATIO * sqrt(((float)TotalI2Squared)/LOOPSAMPLES);
-    I3rms = I3RATIO * sqrt(((float)TotalI3Squared)/LOOPSAMPLES);
+    V1rms = V1RATIO * sqrt(((float)TotalV1Squared) / LOOPSAMPLES);
+    V2rms = V2RATIO * sqrt(((float)TotalV2Squared) / LOOPSAMPLES);
+    V3rms = V3RATIO * sqrt(((float)TotalV3Squared) / LOOPSAMPLES);
+    I1rms = I1RATIO * sqrt(((float)TotalI1Squared) / LOOPSAMPLES);
+    I2rms = I2RATIO * sqrt(((float)TotalI2Squared) / LOOPSAMPLES);
+    I3rms = I3RATIO * sqrt(((float)TotalI3Squared) / LOOPSAMPLES);
 
-    RealPower1 = (V1RATIO * I1RATIO * (float)TotalP1)/LOOPSAMPLES;
-    RealPower2 = (V2RATIO * I2RATIO * (float)TotalP2)/LOOPSAMPLES;
-    RealPower3 = (V3RATIO * I3RATIO * (float)TotalP3)/LOOPSAMPLES;
+    RealPower1Import = (V1RATIO * I1RATIO * (float)TotalP1Import) / LOOPSAMPLES;
+    RealPower2Import = (V2RATIO * I2RATIO * (float)TotalP2Import) / LOOPSAMPLES;
+    RealPower3Import = (V3RATIO * I3RATIO * (float)TotalP3Import) / LOOPSAMPLES;
+    RealPower1Export = (V1RATIO * I1RATIO * (float)TotalP1Export) / LOOPSAMPLES;
+    RealPower2Export = (V2RATIO * I2RATIO * (float)TotalP2Export) / LOOPSAMPLES;
+    RealPower3Export = (V3RATIO * I3RATIO * (float)TotalP3Export) / LOOPSAMPLES;
     ApparentPower1 = V1rms * I1rms;
     ApparentPower2 = V2rms * I2rms;
     ApparentPower3 = V3rms * I3rms;
-    PowerFactor1 = RealPower1 / ApparentPower1;
-    PowerFactor2 = RealPower2 / ApparentPower2;
-    PowerFactor3 = RealPower3 / ApparentPower3;
+    PowerFactor1 = (RealPower1Import + RealPower1Export) / ApparentPower1;
+    PowerFactor2 = (RealPower2Import + RealPower2Export) / ApparentPower2;
+    PowerFactor3 = (RealPower3Import + RealPower3Export) / ApparentPower3;
 
-    Frequency = ((float)CycleCount*16000000)/((float)SumTimerCount*NUMSAMPLES);
+    Frequency = ((float)CycleCount * 16000000) / ((float)SumTimerCount * NUMSAMPLES);
 
     TotalV1Squared = 0;
     TotalV2Squared = 0;
@@ -192,18 +207,19 @@ void calculateVIPF(){
     TotalI1Squared = 0;
     TotalI2Squared = 0;
     TotalI3Squared = 0;
-    TotalP1 = 0;
-    TotalP2 = 0;
-    TotalP3 = 0;
+    TotalP1Import = 0;
+    TotalP2Import = 0;
+    TotalP3Import = 0;
     SumTimerCount = 0;
     CycleCount = 0;
 
 }
 
 void switchrelays (){
-    // Import/export
+
     // accumulators
     // communication
+
 
 }
 
