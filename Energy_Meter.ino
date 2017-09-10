@@ -309,7 +309,7 @@ void switchrelays (){
 
 void sendresults(){
     // Radio communication
-    // todo Radio communication
+    // todo Radio communication to raspberry PI
 }
 
 void setup() {
