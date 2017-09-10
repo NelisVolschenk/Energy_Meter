@@ -9,7 +9,7 @@
 #define I1CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I2CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I3CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
-#define I1LAG 400 // Calibration value for how much I1 lags V1
+#define I1LAG 400 // Calibration value for how much I1 lags V1, Lag is positive
 #define I2LAG 400 // Calibration value for how much I2 lags V2
 #define I3LAG 400 // Calibration value for how much I3 lags V3
 
@@ -44,38 +44,108 @@
 
 
 // Pin names and functions
-
 #define V1PIN 0
 #define I1PIN 1
 #define V2PIN 2
 #define I2PIN 3
 #define V3PIN 4
 #define I3PIN 5
+#define RELAY1PIN 9
+#define RELAY2PIN 10
+#define RELAY3PIN 11
 
 
-// Global Variables
+// Global Variables - seperated into groups
+// Ungrouped variables
+unsigned int TimerCount = PLLTIMERAVG; // Timer1 value
+byte SampleNum=0; // Sample counter in current cycle
+byte PllUnlocked=PLLLOCKCOUNT; // Counter reaching zero when PLL is locked
+boolean NewCycle=false; // Flag for indicating a new cycle has started
+int CycleCount=0; // Counter for number of cycles since last VIPF calculation
+long SumTimerCount=0; // Accumulator for total timer cycles elapsed since last VIPF calculation
 
-int V1Offset=ADCOFFSET, V2Offset=ADCOFFSET, V3Offset=ADCOFFSET;
-int I1Offset=ADCOFFSET, I2Offset=ADCOFFSET, I3Offset=ADCOFFSET;
-long SumV1Squared, SumV2Squared, SumV3Squared, SumI1Squared, SumI2Squared, SumI3Squared;
-long CycleV1Squared, CycleV2Squared, CycleV3Squared, CycleI1Squared, CycleI2Squared, CycleI3Squared;
-long CycleP1, CycleP2, CycleP3;
-long TotalV1Squared, TotalV2Squared, TotalV3Squared, TotalI1Squared, TotalI2Squared, TotalI3Squared;
-long TotalP1Import, TotalP2Import, TotalP3Import, TotalP1Export, TotalP2Export, TotalP3Export;
-long SumP1, SumP2, SumP3;
-int I1PhaseShift, I2PhaseShift, I3PhaseShift;
-byte SampleNum;
-unsigned int TimerCount = PLLTIMERAVG;
-byte PllUnlocked;
-boolean NewCycle;
-int CycleCount;
-long SumTimerCount;
-float V1rms,V2rms,V3rms,I1rms,I2rms,I3rms;
-float RealPower1Import, RealPower2Import, RealPower3Import, RealPower1Export, RealPower2Export, RealPower3Export;
-float ApparentPower1, ApparentPower2, ApparentPower3;
-float PowerFactor1, PowerFactor2, PowerFactor3;
-float Frequency;
-long Units1, Units2, Units3; // Available Power Units in mWh
+// Used to phase shift the Voltage to match the current reading
+int I1PhaseShift=I1LAG;
+int I2PhaseShift=I2LAG;
+int I3PhaseShift=I3LAG;
+
+// ADC centre values
+int V1Offset=ADCOFFSET;
+int V2Offset=ADCOFFSET;
+int V3Offset=ADCOFFSET;
+int I1Offset=ADCOFFSET;
+int I2Offset=ADCOFFSET;
+int I3Offset=ADCOFFSET;
+
+// Summed values for current cycle
+long SumV1Squared=0;
+long SumV2Squared=0;
+long SumV3Squared=0;
+long SumI1Squared=0;
+long SumI2Squared=0;
+long SumI3Squared=0;
+long SumP1=0;
+long SumP2=0;
+long SumP3=0;
+
+// Total values for the whole completed cycle
+long CycleV1Squared=0;
+long CycleV2Squared=0;
+long CycleV3Squared=0;
+long CycleI1Squared=0;
+long CycleI2Squared=0;
+long CycleI3Squared=0;
+long CycleP1=0;
+long CycleP2=0;
+long CycleP3=0;
+
+// Summed values for multiple cycles
+long TotalV1Squared=0;
+long TotalV2Squared=0;
+long TotalV3Squared=0;
+long TotalI1Squared=0;
+long TotalI2Squared=0;
+long TotalI3Squared=0;
+long TotalP1Import=0;
+long TotalP2Import=0;
+long TotalP3Import=0;
+long TotalP1Export=0;
+long TotalP2Export=0;
+long TotalP3Export=0;
+
+// Calculated values for the previously completed set of cyles
+float V1rms=0;
+float V2rms=0;
+float V3rms=0;
+float I1rms=0;
+float I2rms=0;
+float I3rms=0;
+float RealPower1Import=0;
+float RealPower2Import=0;
+float RealPower3Import=0;
+float RealPower1Export=0;
+float RealPower2Export=0;
+float RealPower3Export=0;
+float ApparentPower1=0;
+float ApparentPower2=0;
+float ApparentPower3=0;
+float PowerFactor1=0;
+float PowerFactor2=0;
+float PowerFactor3=0;
+float Frequency=0;
+
+// Available Units in mWh
+long Units1=0;
+long Units2=0;
+long Units3=0;
+long UnitsUsed1=0;
+long UnitsUsed2=0;
+long UnitsUsed3=0;
+
+// State of relays
+byte Relay1State=0;
+byte Relay2State=0;
+byte Relay3State=0;
 
 
 /*  This will synchronize the timer to the V1 frequency and perform all needed calculations at the end of each cycle
@@ -84,10 +154,9 @@ long Units1, Units2, Units3; // Available Power Units in mWh
 
 void pllcalcs (int newV1){
 
-
     // Variables that persist between loops
-    static int oldV1; // The value from the start of the previous cycle
-    static int PrevV1; // The previous measurement value
+    static int oldV1=0; // The value from the start of the previous cycle
+    static int PrevV1=0; // The previous measurement value
     boolean Rising;
 
     // Check in which part of the cycle we are
@@ -179,6 +248,8 @@ void addcycle () {
 
 void calculateVIPF(){
 
+    float TotalTime=0;
+
     V1rms = V1RATIO * sqrt(((float)TotalV1Squared) / LOOPSAMPLES);
     V2rms = V2RATIO * sqrt(((float)TotalV2Squared) / LOOPSAMPLES);
     V3rms = V3RATIO * sqrt(((float)TotalV3Squared) / LOOPSAMPLES);
@@ -199,8 +270,20 @@ void calculateVIPF(){
     PowerFactor2 = (RealPower2Import + RealPower2Export) / ApparentPower2;
     PowerFactor3 = (RealPower3Import + RealPower3Export) / ApparentPower3;
 
-    Frequency = ((float)CycleCount * 16000000) / ((float)SumTimerCount * NUMSAMPLES);
+    TotalTime = ((float)SumTimerCount * NUMSAMPLES) / AVRCLOCKSPEED; // Time in seconds
+    Frequency = (float)CycleCount / TotalTime;
 
+    // Calcualte the units used, 0.5 added for correct rounding
+    UnitsUsed1 = long((RealPower1Import * TotalTime / 3.6) + 0.5);
+    UnitsUsed2 = long((RealPower2Import * TotalTime / 3.6) + 0.5);
+    UnitsUsed3 = long((RealPower3Import * TotalTime / 3.6) + 0.5);
+
+    // Update The unit counter
+    Units1 -= UnitsUsed1;
+    Units2 -= UnitsUsed2;
+    Units3 -= UnitsUsed3;
+
+    // Clear the counters
     TotalV1Squared = 0;
     TotalV2Squared = 0;
     TotalV3Squared = 0;
@@ -215,21 +298,42 @@ void calculateVIPF(){
 
 }
 
+
 void switchrelays (){
 
-    // accumulators
-    // communication
-
-
+    // Set relay states
+    digitalWrite(RELAY1PIN,Relay1State);
+    digitalWrite(RELAY2PIN,Relay2State);
+    digitalWrite(RELAY3PIN,Relay3State);
 }
 
 void sendresults(){
-
+    // Radio communication
 }
 
 void setup() {
     // setup pins
+    pinMode(RELAY1PIN,OUTPUT);
+    digitalWrite(RELAY1PIN,LOW);
+    pinMode(RELAY2PIN,OUTPUT);
+    digitalWrite(RELAY2PIN,LOW);
+    pinMode(RELAY3PIN,OUTPUT);
+    digitalWrite(RELAY3PIN,LOW);
 
+    // Clear the last 3 bits and change prescaler to 64 = 250kHz
+    ADCSRA &= 0xf8;
+    ADCSRA |= 0x06;
+
+    noInterrupts();
+    TCCR1A = 0; // Clear control registers
+    TCCR1B = 0;
+    TCNT1  = 0; // Clear counter
+    OCR1A = PLLTIMERAVG; // Set compare reg for timer period
+    bitSet(TCCR1B,WGM12); // CTC mode
+    bitSet(TCCR1B,CS10); // No prescaling
+    bitSet(TIMSK1,OCIE1A); // Enable timer 1 compare interrupt
+    bitSet(ADCSRA,ADIE); // Enable ADC interrupt
+    interrupts();
 }
 
 
@@ -247,24 +351,52 @@ void loop() {
 
 // Timer interrupt
 ISR(TIMER1_COMPA_vect){
+
     ADMUX = _BV(REFS0) | V1PIN; // Set ADC conversion to start on V1Pin
     ADCSRA |= _BV(ADSC); // Start ADC conversion
 }
 
 // ADC interrupt
 ISR(ADC_vect){
+
     // Variables that persist between conversions
-    static int NewV1, NewI1, NewV2, NewI2, NewV3, NewI3;
-    static int PrevV1, PrevV2, PrevV3, PrevI1, PrevI2, PrevI3;
-    static long FilterV1Offset=FILTEROFFSET, FilterV2Offset=FILTEROFFSET, FilterV3Offset=FILTEROFFSET;
-    static long FilterI1Offset=FILTEROFFSET, FilterI2Offset=FILTEROFFSET, FilterI3Offset=FILTEROFFSET;
-    static int V1Zero, V2Zero, V3Zero, I1Zero, I2Zero, I3Zero;
-    static byte V1FilterPoint, V2FilterPoint, V3FilterPoint, I1FilterPoint, I2FilterPoint, I3FilterPoint;
-    static int VTime, ITime;
+    static int NewV1=0;
+    static int NewI1=0;
+    static int NewV2=0;
+    static int NewI2=0;
+    static int NewV3=0;
+    static int NewI3=0;
+    static int PrevV1=0;
+    static int PrevV2=0;
+    static int PrevV3=0;
+    static int PrevI1=0;
+    static int PrevI2=0;
+    static int PrevI3=0;
+    static long FilterV1Offset=FILTEROFFSET;
+    static long FilterV2Offset=FILTEROFFSET;
+    static long FilterV3Offset=FILTEROFFSET;
+    static long FilterI1Offset=FILTEROFFSET;
+    static long FilterI2Offset=FILTEROFFSET;
+    static long FilterI3Offset=FILTEROFFSET;
+    static int V1Zero=0;
+    static int V2Zero=0;
+    static int V3Zero=0;
+    static int I1Zero=0;
+    static int I2Zero=0;
+    static int I3Zero=0;
+    static byte V1FilterPoint=0;
+    static byte V2FilterPoint=0;
+    static byte V3FilterPoint=0;
+    static byte I1FilterPoint=0;
+    static byte I2FilterPoint=0;
+    static byte I3FilterPoint=0;
+    static int VTime=0;
+    static int ITime=0;
+
     // Other variables
-    int ADCValue;
+    int ADCValue=0;
     long PhaseShiftedV=0;
-    int TimerNow;
+    int TimerNow=0;
 
     // Collect the result from the registers and combine
     TimerNow = TCNT1;
