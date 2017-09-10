@@ -309,6 +309,7 @@ void switchrelays (){
 
 void sendresults(){
     // Radio communication
+    // todo Radio
 }
 
 void setup() {
