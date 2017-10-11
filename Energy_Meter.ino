@@ -311,6 +311,7 @@ void switchrelays (){
 void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
+    Serial.print("Arduino Werk");
 }
 
 void setup() {
@@ -321,6 +322,9 @@ void setup() {
     digitalWrite(RELAY2PIN,LOW);
     pinMode(RELAY3PIN,OUTPUT);
     digitalWrite(RELAY3PIN,LOW);
+
+    // Start Serial
+    Serial.begin(9600);
 
     // Clear the last 3 bits and change prescaler to 64 = 250kHz
     ADCSRA &= 0xf8;
