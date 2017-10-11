@@ -50,10 +50,10 @@
 #define I2PIN 3
 #define V3PIN 4
 #define I3PIN 5
-#define RELAY1PIN 9
-#define RELAY2PIN 10
-#define RELAY3PIN 11
-#define PLLLOCKEDPIN 12
+#define RELAY1PIN 5
+#define RELAY2PIN 6
+#define RELAY3PIN 7
+#define PLLLOCKEDPIN 8
 
 
 // Global Variables - seperated into groups
@@ -177,7 +177,7 @@ void pllcalcs (int newV1){
             } else if (PllUnlocked) {
                 PllUnlocked --; // If PLL is unlocked but in range
             }
-            // If in the falling part of the cycle: We don't want to be here, so get out as fast as possible and unlock
+        // If in the falling part of the cycle: We don't want to be here, so get out as fast as possible and unlock
         } else {
             TimerCount = PLLTIMERMAX;
             PllUnlocked = PLLLOCKCOUNT;
@@ -311,7 +311,22 @@ void switchrelays (){
 void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
-    Serial.print("Arduino Werk");
+
+    Serial.println("Arduino Werk");
+    Serial.print("V1rms: ");
+    Serial.println(V1rms);
+    Serial.print("I1rms: ");
+    Serial.println(I1rms);
+    Serial.print("Power Factor 1: ");
+    Serial.println(PowerFactor1);
+    Serial.print("Frequency: ");
+    Serial.println(Frequency);
+    Serial.print("Timer: ");
+    Serial.println(TimerCount);
+
+
+
+
 }
 
 void setup() {
@@ -577,6 +592,10 @@ ISR(ADC_vect){
                 SumV3Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI3Squared += (NewI3*NewI3);
             }
+            //Serial.print("TimerCount: ");
+            //Serial.println(TimerCount);
+            //Serial.print("TimerNow: ");
+            //Serial.println(TimerNow);
             pllcalcs(NewV1);
             break;
     }
