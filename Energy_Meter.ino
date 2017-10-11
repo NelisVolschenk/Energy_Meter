@@ -53,6 +53,7 @@
 #define RELAY1PIN 9
 #define RELAY2PIN 10
 #define RELAY3PIN 11
+#define PLLLOCKEDPIN 12
 
 
 // Global Variables - seperated into groups
