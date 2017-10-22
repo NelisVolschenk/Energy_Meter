@@ -20,7 +20,7 @@
 #define ADCOFFSET 512 // Initial ADC Offset value
 #define NUMSAMPLES 40 // Number of times to sample per cycle -- make sure this is an even number
 #define SUPPLYFREQUENCY 50 // Frequency of the supply in Hz
-#define PLLTIMERRANGE 900 // The max deviation from the average Timer1 value ~ +/- 5 Hz
+#define PLLTIMERRANGE 800 // The max deviation from the average Timer1 value ~ +/- 5 Hz
 #define AVRCLOCKSPEED 16000000 // Clock speed of the ATmega328P in Hz
 #define PLLLOCKCOUNT 200 // Number of samples for PLL to be considered locked ~ 4 seconds. N.B--Less than 255
 #define PLLLOCKRANGE 80 // ADC deviation from offset to enter locked state ~ 1/2 of the time between samples
@@ -41,15 +41,16 @@
 #define PLLTIMERMAX (PLLTIMERAVG+PLLTIMERRANGE) // Maximum Timer 1 value to start next set of measurements
 #define SAMPLEPERIOD (1000000/(SUPPLYFREQUENCY*NUMSAMPLES)) // Sampling period in microseconds
 #define LOOPSAMPLES (LOOPCYCLES*NUMSAMPLES) // Number of samples per transmit cycle.
+#define TIMERFACTOR 3 // The ratio between voltage and timer adjustments
 
 
 // Pin names and functions
-#define V1PIN 0
-#define I1PIN 1
+#define V1PIN 3
+#define I1PIN 0
 #define V2PIN 2
-#define I2PIN 3
+#define I2PIN 6
 #define V3PIN 4
-#define I3PIN 5
+#define I3PIN 7
 #define RELAY1PIN 5
 #define RELAY2PIN 6
 #define RELAY3PIN 7
@@ -60,7 +61,7 @@
 // Ungrouped variables
 unsigned int TimerCount = PLLTIMERAVG; // Timer1 value
 byte SampleNum=0; // Sample counter in current cycle
-byte PllUnlocked=PLLLOCKCOUNT; // Counter reaching zero when PLL is locked
+int PllUnlocked=PLLLOCKCOUNT; // Counter reaching zero when PLL is locked
 boolean NewCycle=false; // Flag for indicating a new cycle has started
 int CycleCount=0; // Counter for number of cycles since last VIPF calculation
 long SumTimerCount=0; // Accumulator for total timer cycles elapsed since last VIPF calculation
@@ -148,6 +149,11 @@ byte Relay1State=0;
 byte Relay2State=0;
 byte Relay3State=0;
 
+// Testvalue
+float TV1=0;
+float TV2=0;
+float TV3=0;
+
 
 /*  This will synchronize the timer to the V1 frequency and perform all needed calculations at the end of each cycle
  */
@@ -160,16 +166,16 @@ void pllcalcs (int newV1){
     static int PrevV1=0; // The previous measurement value
     boolean Rising;
 
-    // Check in which part of the cycle we are
+    // Check in which part of the cycle we are and update PrevV1 for next cycle
     Rising = (newV1>PrevV1);
-
+    PrevV1 = newV1;
     if (SampleNum == 0){ // Start of new cycle
 
         // If in the rising part of the cycle: This is where we want to be, but adjust the timer if we are moving away
         // from the zero point.
         if (Rising){
             if ( ((newV1<0)&&(newV1<=oldV1)) || ((newV1>0)&&(newV1>=oldV1)) ){
-                TimerCount -= newV1;
+                TimerCount -= (newV1 * TIMERFACTOR);
                 TimerCount = constrain(TimerCount,PLLTIMERMIN,PLLTIMERMAX);
             }
             if (abs(newV1)>PLLLOCKRANGE){
@@ -179,7 +185,7 @@ void pllcalcs (int newV1){
             }
         // If in the falling part of the cycle: We don't want to be here, so get out as fast as possible and unlock
         } else {
-            TimerCount = PLLTIMERMAX;
+            TimerCount = 8080; // Remove hierdie hardcode
             PllUnlocked = PLLLOCKCOUNT;
         }
         // Update the timer and store voltage for use at start of next cycle
@@ -188,6 +194,7 @@ void pllcalcs (int newV1){
 
     // Last sample of the cycle, perform all calculations and update the variables for the main loop.
     } else if (SampleNum == (NUMSAMPLES-1)) {
+
         // Update the Cycle Variables
         CycleV1Squared = SumV1Squared;
         CycleV2Squared = SumV2Squared;
@@ -273,6 +280,7 @@ void calculateVIPF(){
 
     TotalTime = ((float)SumTimerCount * NUMSAMPLES) / AVRCLOCKSPEED; // Time in seconds
     Frequency = (float)CycleCount / TotalTime;
+    TV1 = TotalTime;
 
     // Calcualte the units used, 0.5 added for correct rounding
     UnitsUsed1 = long((RealPower1Import * TotalTime / 3.6) + 0.5);
@@ -306,13 +314,19 @@ void switchrelays (){
     digitalWrite(RELAY1PIN,Relay1State);
     digitalWrite(RELAY2PIN,Relay2State);
     digitalWrite(RELAY3PIN,Relay3State);
+    if (PllUnlocked==0) {
+        digitalWrite(PLLLOCKEDPIN, HIGH);
+    } else {
+        digitalWrite(PLLLOCKEDPIN,LOW);
+    }
+
 }
 
 void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
 
-    Serial.println("Arduino Werk");
+
     Serial.print("V1rms: ");
     Serial.println(V1rms);
     Serial.print("I1rms: ");
@@ -321,11 +335,17 @@ void sendresults(){
     Serial.println(PowerFactor1);
     Serial.print("Frequency: ");
     Serial.println(Frequency);
-    Serial.print("Timer: ");
-    Serial.println(TimerCount);
+    Serial.print("PLL: ");
+    Serial.println(PllUnlocked);
 
 
-
+    Serial.print("Testvalue1: ");
+    Serial.println(TV1);
+    Serial.print("Testvalue2: ");
+    Serial.println(TV2);
+    Serial.print("Testvalue3: ");
+    Serial.println(TV3);
+    Serial.println(" ");
 
 }
 
@@ -434,6 +454,7 @@ ISR(ADC_vect){
             PrevV1 = NewV1;
             NewV1 =  ADCValue - V1Offset;
             VTime = TimerNow;
+            /*
             // Store first positive reading for filter calculations and mark where filter should be updated
             if ((NewV1>=0)&&(PrevV1<0)) {
                 V1Zero = NewV1;
@@ -447,6 +468,9 @@ ISR(ADC_vect){
                 FilterV1Offset += (V1Zero+NewV1)>>1;
                 V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
+            */
+            // FilterV1Offset += NewV1;
+            // V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
             break;
 
         case I1PIN: // I1 Just completed
@@ -592,11 +616,14 @@ ISR(ADC_vect){
                 SumV3Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI3Squared += (NewI3*NewI3);
             }
-            //Serial.print("TimerCount: ");
-            //Serial.println(TimerCount);
-            //Serial.print("TimerNow: ");
-            //Serial.println(TimerNow);
-            pllcalcs(NewV1);
+            /*
+             * Determine CPU Usage
+            Serial.print("TimerCount: ");
+            Serial.println(TimerCount);
+            Serial.print("TimerNow: ");
+            Serial.println(TimerNow);
+            */
+             pllcalcs(NewV1);
             break;
     }
 
