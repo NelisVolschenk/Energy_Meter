@@ -12,8 +12,8 @@
 #define I1LAG 400 // Calibration value for how much I1 lags V1, Lag is positive
 #define I2LAG 400 // Calibration value for how much I2 lags V2
 #define I3LAG 400 // Calibration value for how much I3 lags V3
-#define PIDK1 3 // PID K1
-#define PIDK2 1 // PID K2
+#define PIDK1 4 // PID K1
+#define PIDK2 -3 // PID K2
 #define PIDK3 0 // PID K3
 
 
@@ -25,7 +25,7 @@
 #define SUPPLYFREQUENCY 50 // Frequency of the supply in Hz
 #define PLLTIMERRANGE 800 // The max deviation from the average Timer1 value ~ +/- 5 Hz
 #define AVRCLOCKSPEED 16000000 // Clock speed of the ATmega328P in Hz
-#define PLLLOCKCOUNT 200 // Number of samples for PLL to be considered locked ~ 4 seconds. N.B--Less than 255
+#define PLLLOCKCOUNT 2000 // Number of samples for PLL to be considered locked ~ 4 seconds. N.B--Less than 255
 #define PLLLOCKRANGE 80 // ADC deviation from offset to enter locked state ~ 1/2 of the time between samples
 #define LOOPCYCLES 250 // Cycles to complete before sending data
 
@@ -174,8 +174,10 @@ void pllcalcs (int NewV1){
         e2 = e1;
         e1 = e0;
         e0 = 0 - NewV1;
+        TV2 = e0;
         // Calculate the new timer value
         TimerCount += (e0 * PIDK1 + e1 * PIDK2 + e2 * PIDK3);
+        TimerCount = constrain(TimerCount, PLLTIMERMIN, PLLTIMERMAX);
 
         // Check if PLL is in lock range and decrement the counter if it is, otherwise set counter to max
         if (abs(NewV1)>PLLLOCKRANGE){
@@ -320,6 +322,7 @@ void switchrelays (){
 void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
+    // Change PLL COunter back to 200
 
 
     Serial.print("V1rms: ");
@@ -352,6 +355,8 @@ void setup() {
     digitalWrite(RELAY2PIN,LOW);
     pinMode(RELAY3PIN,OUTPUT);
     digitalWrite(RELAY3PIN,LOW);
+    pinMode(PLLLOCKEDPIN,OUTPUT);
+    digitalWrite(PLLLOCKEDPIN,LOW);
 
     // Start Serial
     Serial.begin(9600);
@@ -464,9 +469,10 @@ ISR(ADC_vect){
                 V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
             */
-            // FilterV1Offset += NewV1;
-            // V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
+            FilterV1Offset += NewV1;
+            V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
             break;
+
 
         case I1PIN: // I1 Just completed
             ADMUX = _BV(REFS0) | V2PIN; // Set ADC conversion to start on V2Pin
