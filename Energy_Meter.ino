@@ -454,7 +454,7 @@ ISR(ADC_vect){
             PrevV1 = NewV1;
             NewV1 =  ADCValue - V1Offset;
             VTime = TimerNow;
-            /*
+
             // Store first positive reading for filter calculations and mark where filter should be updated
             if ((NewV1>=0)&&(PrevV1<0)) {
                 V1Zero = NewV1;
@@ -468,9 +468,10 @@ ISR(ADC_vect){
                 FilterV1Offset += (V1Zero+NewV1)>>1;
                 V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
-            */
+            /*
             FilterV1Offset += NewV1;
             V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
+             */
             break;
 
 
