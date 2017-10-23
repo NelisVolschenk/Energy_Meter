@@ -164,13 +164,10 @@ float TV3=0;
 void pllcalcs (int NewV1){
 
     // Variables that persist between loops
-    static int oldV1=0; // The value from the start of the previous cycle
-    static int PrevV1=0; // The previous measurement value
     static int e0=0, e1=0,e2=0;
-    boolean Rising;
 
-
-    if (SampleNum == 0){ // Start of new cycle
+    // Update the timer value and PLL locked counter at the start of every cycle
+    if (SampleNum == 0){
 
         // PID Controller for the phase locked loop
         // Update the Variables
