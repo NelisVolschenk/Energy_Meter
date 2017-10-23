@@ -12,6 +12,9 @@
 #define I1LAG 400 // Calibration value for how much I1 lags V1, Lag is positive
 #define I2LAG 400 // Calibration value for how much I2 lags V2
 #define I3LAG 400 // Calibration value for how much I3 lags V3
+#define PIDK1 3 // PID K1
+#define PIDK2 1 // PID K2
+#define PIDK3 0 // PID K3
 
 
 // General constants
@@ -41,7 +44,6 @@
 #define PLLTIMERMAX (PLLTIMERAVG+PLLTIMERRANGE) // Maximum Timer 1 value to start next set of measurements
 #define SAMPLEPERIOD (1000000/(SUPPLYFREQUENCY*NUMSAMPLES)) // Sampling period in microseconds
 #define LOOPSAMPLES (LOOPCYCLES*NUMSAMPLES) // Number of samples per transmit cycle.
-#define TIMERFACTOR 3 // The ratio between voltage and timer adjustments
 
 
 // Pin names and functions
@@ -159,38 +161,34 @@ float TV3=0;
  */
 
 
-void pllcalcs (int newV1){
+void pllcalcs (int NewV1){
 
     // Variables that persist between loops
     static int oldV1=0; // The value from the start of the previous cycle
     static int PrevV1=0; // The previous measurement value
+    static int e0=0, e1=0,e2=0;
     boolean Rising;
 
-    // Check in which part of the cycle we are and update PrevV1 for next cycle
-    Rising = (newV1>PrevV1);
-    PrevV1 = newV1;
+
     if (SampleNum == 0){ // Start of new cycle
 
-        // If in the rising part of the cycle: This is where we want to be, but adjust the timer if we are moving away
-        // from the zero point.
-        if (Rising){
-            if ( ((newV1<0)&&(newV1<=oldV1)) || ((newV1>0)&&(newV1>=oldV1)) ){
-                TimerCount -= (newV1 * TIMERFACTOR);
-                TimerCount = constrain(TimerCount,PLLTIMERMIN,PLLTIMERMAX);
-            }
-            if (abs(newV1)>PLLLOCKRANGE){
-                PllUnlocked = PLLLOCKCOUNT; // PLL is now unlocked and needs to relock
-            } else if (PllUnlocked) {
-                PllUnlocked --; // If PLL is unlocked but in range
-            }
-        // If in the falling part of the cycle: We don't want to be here, so get out as fast as possible and unlock
-        } else {
-            TimerCount = 8080; // Remove hierdie hardcode
+        // PID Controller for the phase locked loop
+        // Update the Variables
+        e2 = e1;
+        e1 = e0;
+        e0 = 0 - NewV1;
+        // Calculate the new timer value
+        TimerCount += (e0 * PIDK1 + e1 * PIDK2 + e2 * PIDK3);
+
+        // Check if PLL is in lock range and decrement the counter if it is, otherwise set counter to max
+        if (abs(NewV1)>PLLLOCKRANGE){
             PllUnlocked = PLLLOCKCOUNT;
+        } else if (PllUnlocked) {
+            PllUnlocked --;
         }
-        // Update the timer and store voltage for use at start of next cycle
+        // Update the timer
         OCR1A=TimerCount;
-        oldV1 = newV1;
+
 
     // Last sample of the cycle, perform all calculations and update the variables for the main loop.
     } else if (SampleNum == (NUMSAMPLES-1)) {
