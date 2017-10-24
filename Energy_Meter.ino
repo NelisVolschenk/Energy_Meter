@@ -9,9 +9,9 @@
 #define I1CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I2CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I3CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
-#define I1LAG 400 // Calibration value for how much I1 lags V1, Lag is positive
-#define I2LAG 400 // Calibration value for how much I2 lags V2
-#define I3LAG 400 // Calibration value for how much I3 lags V3
+#define I1LAG 0 // Calibration value for how much I1 lags V1, Lag is positive
+#define I2LAG 0 // Calibration value for how much I2 lags V2
+#define I3LAG 0 // Calibration value for how much I3 lags V3
 #define PIDK1 4 // PID K1
 #define PIDK2 -3 // PID K2
 #define PIDK3 0 // PID K3
@@ -23,6 +23,8 @@
 #define ADCOFFSET 512 // Initial ADC Offset value
 #define NUMSAMPLES 40 // Number of times to sample per cycle -- make sure this is an even number
 #define SUPPLYFREQUENCY 50 // Frequency of the supply in Hz
+#define SUPPLYMINV 203 // Minimum RMS Volts that will be supplied
+#define SUPPLYMAXV 257 // Maximum RMS Volts that will be supplied
 #define PLLTIMERRANGE 800 // The max deviation from the average Timer1 value ~ +/- 5 Hz
 #define AVRCLOCKSPEED 16000000 // Clock speed of the ATmega328P in Hz
 #define PLLLOCKCOUNT 2000 // Number of samples for PLL to be considered locked ~ 4 seconds. N.B--Less than 255
@@ -252,6 +254,7 @@ void addcycle () {
 
 
 void calculateVIPF(){
+    //todo VOltage range
 
     float TotalTime=0;
 
