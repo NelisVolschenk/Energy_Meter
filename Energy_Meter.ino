@@ -6,9 +6,9 @@
 #define V1CAL 246 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
 #define V2CAL 246 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
 #define V3CAL 246 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
-#define I1CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
-#define I2CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
-#define I3CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
+#define I1CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
+#define I2CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
+#define I3CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I1LAG 1 // Calibration value for how much I1 lags V1, Lag is positive
 #define I2LAG 1 // Calibration value for how much I2 lags V2
 #define I3LAG 1 // Calibration value for how much I3 lags V3
