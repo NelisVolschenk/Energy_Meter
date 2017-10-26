@@ -9,9 +9,9 @@
 #define I1CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I2CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I3CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
-#define I1LAG 0 // Calibration value for how much I1 lags V1, Lag is positive
-#define I2LAG 0 // Calibration value for how much I2 lags V2
-#define I3LAG 0 // Calibration value for how much I3 lags V3
+#define I1LAG 1 // Calibration value for how much I1 lags V1, Lag is positive
+#define I2LAG 1 // Calibration value for how much I2 lags V2
+#define I3LAG 1 // Calibration value for how much I3 lags V3
 #define PIDK1 4 // PID K1
 #define PIDK2 -3 // PID K2
 #define PIDK3 0 // PID K3
@@ -331,9 +331,10 @@ void sendresults(){
 
     Serial.print("V1rms: ");
     Serial.println(V1rms);
-    /*
+
     Serial.print("I1rms: ");
     Serial.println(I1rms);
+     /*
     Serial.print("Power Factor 1: ");
     Serial.println(PowerFactor1);
     Serial.print("Frequency: ");
