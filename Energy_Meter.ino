@@ -3,9 +3,9 @@
 //todo Project description
 
 // System specific constants
-#define V1CAL 241 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
-#define V2CAL 241 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
-#define V3CAL 241 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
+#define V1CAL 246 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
+#define V2CAL 246 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
+#define V3CAL 246 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
 #define I1CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I2CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I3CAL 91 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
@@ -29,7 +29,7 @@
 #define AVRCLOCKSPEED 16000000 // Clock speed of the ATmega328P in Hz
 #define PLLLOCKCOUNT 2000 // Number of samples for PLL to be considered locked ~ 4 seconds. N.B--Less than 255
 #define PLLLOCKRANGE 80 // ADC deviation from offset to enter locked state ~ 1/2 of the time between samples
-#define LOOPCYCLES 250 // Cycles to complete before sending data
+#define LOOPCYCLES 100 // Cycles to complete before sending data
 
 
 // Calculated constants (at compile time)
@@ -185,6 +185,7 @@ void pllcalcs (int NewV1){
         if (abs(NewV1)>PLLLOCKRANGE){
             PllUnlocked = PLLLOCKCOUNT;
         } else if (PllUnlocked) {
+
             PllUnlocked --;
         }
         // Update the timer
@@ -330,6 +331,7 @@ void sendresults(){
 
     Serial.print("V1rms: ");
     Serial.println(V1rms);
+    /*
     Serial.print("I1rms: ");
     Serial.println(I1rms);
     Serial.print("Power Factor 1: ");
@@ -348,6 +350,7 @@ void sendresults(){
     Serial.println(TV3);
     Serial.println(" ");
 
+    */
 }
 
 void setup() {
