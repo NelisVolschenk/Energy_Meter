@@ -565,7 +565,7 @@ ISR(ADC_vect){
             // Update variables for I2
             PrevI2 = NewI2;
             NewI2 =  ADCValue - I2Offset;
-            // Store first positive reading for filter calculations and mark where filter should be updated
+            /* Store first positive reading for filter calculations and mark where filter should be updated
             if ((NewI2>=0)&&(PrevI2<0)) {
                 I2Zero = NewI2;
                 I2FilterPoint = SampleNum + (NUMSAMPLES/2);
@@ -578,6 +578,9 @@ ISR(ADC_vect){
                 FilterI2Offset += (I2Zero+NewI2)>>1;
                 I2Offset=(int)((FilterI2Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
+            */
+            FilterI1Offset += (NewI1);  // update the filter
+            I1Offset=(int)((FilterI1Offset+FILTERROUNDING)>>FILTERSHIFT);
             // Apply phase correction and calculate
             if (I2PhaseShift>=0) { // Current leads voltage: Interpolate voltage to previous current
                 PhaseShiftedV = ((((long)NewV2-PrevV2)*(I2PhaseShift)/TimerCount)) + PrevV2;
@@ -620,7 +623,7 @@ ISR(ADC_vect){
             // Update variables for I3
             PrevI3 = NewI3;
             NewI3 =  ADCValue - I3Offset;
-            // Store first positive reading for filter calculations and mark where filter should be updated
+            /* Store first positive reading for filter calculations and mark where filter should be updated
             if ((NewI3>=0)&&(PrevI3<0)) {
                 I3Zero = NewI3;
                 I3FilterPoint = SampleNum + (NUMSAMPLES/2);
@@ -633,6 +636,9 @@ ISR(ADC_vect){
                 FilterI3Offset += (I3Zero+NewI3)>>1;
                 I3Offset=(int)((FilterI3Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
+            */
+            FilterI1Offset += (NewI1);  // update the filter
+            I1Offset=(int)((FilterI1Offset+FILTERROUNDING)>>FILTERSHIFT);
             // Apply phase correction and calculate
             if (I3PhaseShift>=0) { // Current leads voltage: Interpolate voltage to previous current
                 PhaseShiftedV = ((((long)NewV3-PrevV3)*(I3PhaseShift)/TimerCount)) + PrevV3;
