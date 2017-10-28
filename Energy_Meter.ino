@@ -559,13 +559,13 @@ ISR(ADC_vect){
             }
             // Apply phase correction and calculate
             if (I2PhaseShift>=0) { // Current lags voltage: Interpolate voltage to previous current
-                PhaseShiftedV = ((((long)NewV2-PrevV2)*(I2PhaseShift)*SAMPLEPERIOD/TimerCount)>>6) + PrevV2;
+                PhaseShiftedV = ((((long)NewV2-PrevV2)*(I2PhaseShift)/TimerCount)) + PrevV2;
                 SumP2 += (PhaseShiftedV*PrevI2);
                 SumV2Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI2Squared += (PrevI2*PrevI2);
             }
             if (I2PhaseShift<0){ // Current leads voltage: Interpolate voltage to new current
-                PhaseShiftedV = ((((long)NewV2-PrevV2)*(I2PhaseShift+1)*SAMPLEPERIOD/TimerCount)>>6) + PrevV2;
+                PhaseShiftedV = ((((long)NewV2-PrevV2)*(I2PhaseShift)/TimerCount)) + NewV2;
                 SumP2 += (PhaseShiftedV*NewI2);
                 SumV2Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI2Squared += (NewI2*NewI2);
@@ -614,13 +614,13 @@ ISR(ADC_vect){
             }
             // Apply phase correction and calculate
             if (I3PhaseShift>=0) { // Current lags voltage: Interpolate voltage to previous current
-                PhaseShiftedV = ((((long)NewV3-PrevV3)*(I3PhaseShift)*SAMPLEPERIOD/TimerCount)>>6) + PrevV3;
+                PhaseShiftedV = ((((long)NewV3-PrevV3)*(I3PhaseShift)/TimerCount)) + PrevV3;
                 SumP3 += (PhaseShiftedV*PrevI3);
                 SumV3Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI3Squared += (PrevI3*PrevI3);
             }
             if (I3PhaseShift<0){ // Current leads voltage: Interpolate voltage to new current
-                PhaseShiftedV = ((((long)NewV3-PrevV3)*(I3PhaseShift+1)*SAMPLEPERIOD/TimerCount)>>6) + PrevV3;
+                PhaseShiftedV = ((((long)NewV3-PrevV3)*(I3PhaseShift)/TimerCount)) + NewV3;
                 SumP3 += (PhaseShiftedV*NewI3);
                 SumV3Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI3Squared += (NewI3*NewI3);
