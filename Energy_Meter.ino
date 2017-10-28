@@ -176,7 +176,7 @@ void pllcalcs (int NewV1){
         e2 = e1;
         e1 = e0;
         e0 = 0 - NewV1;
-        TV2 = e0;
+
         // Calculate the new timer value
         TimerCount += (e0 * PIDK1 + e1 * PIDK2 + e2 * PIDK3);
         TimerCount = constrain(TimerCount, PLLTIMERMIN, PLLTIMERMAX);
@@ -279,9 +279,12 @@ void calculateVIPF(){
     PowerFactor2 = (RealPower2Import + RealPower2Export) / ApparentPower2;
     PowerFactor3 = (RealPower3Import + RealPower3Export) / ApparentPower3;
 
+    TV1 = RealPower1Import;
+    TV2 = RealPower1Export;
+    TV3 = ApparentPower1;
+
     TotalTime = ((float)SumTimerCount * NUMSAMPLES) / AVRCLOCKSPEED; // Time in seconds
     Frequency = (float)CycleCount / TotalTime;
-    TV1 = TotalTime;
 
     // Calcualte the units used, 0.5 added for correct rounding
     UnitsUsed1 = long((RealPower1Import * TotalTime / 3.6) + 0.5);
@@ -303,6 +306,9 @@ void calculateVIPF(){
     TotalP1Import = 0;
     TotalP2Import = 0;
     TotalP3Import = 0;
+    TotalP1Export = 0;
+    TotalP2Export = 0;
+    TotalP3Export = 0;
     SumTimerCount = 0;
     CycleCount = 0;
 
@@ -334,7 +340,7 @@ void sendresults(){
 
     Serial.print("I1rms: ");
     Serial.println(I1rms);
-     /*
+
     Serial.print("Power Factor 1: ");
     Serial.println(PowerFactor1);
     Serial.print("Frequency: ");
@@ -351,7 +357,7 @@ void sendresults(){
     Serial.println(TV3);
     Serial.println(" ");
 
-    */
+
 }
 
 void setup() {
@@ -438,8 +444,6 @@ ISR(ADC_vect){
     static byte I1FilterPoint=0;
     static byte I2FilterPoint=0;
     static byte I3FilterPoint=0;
-    static int VTime=0;
-    static int ITime=0;
 
     // Other variables
     int ADCValue=0;
@@ -460,7 +464,6 @@ ISR(ADC_vect){
             // Update variables for V1
             PrevV1 = NewV1;
             NewV1 =  ADCValue - V1Offset;
-            VTime = TimerNow;
 
             // Store first positive reading for filter calculations and mark where filter should be updated
             if ((NewV1>=0)&&(PrevV1<0)) {
@@ -470,15 +473,12 @@ ISR(ADC_vect){
                     V1FilterPoint -= NUMSAMPLES;
                 }
             }
+
             // Update low pass filter at centre of wave
             if (SampleNum == V1FilterPoint) {
                 FilterV1Offset += (V1Zero+NewV1)>>1;
                 V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
-            /*
-            FilterV1Offset += NewV1;
-            V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
-             */
             break;
 
 
@@ -488,7 +488,7 @@ ISR(ADC_vect){
             // Update variables for I1
             PrevI1 = NewI1;
             NewI1 =  ADCValue - I1Offset;
-            ITime = TimerNow;
+
             // Store first positive reading for filter calculations and mark where filter should be updated
             if ((NewI1>=0)&&(PrevI1<0)) {
                 I1Zero = NewI1;
