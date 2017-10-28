@@ -9,12 +9,9 @@
 #define I1CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I2CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I3CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
-#define I1LAG 2500 // Calibration value for how much I1 leads V1, Lead is positive
-#define I2LAG 2500 // Calibration value for how much I2 lags V2
-#define I3LAG 2500 // Calibration value for how much I3 lags V3
-#define PIDK1 4 // PID K1
-#define PIDK2 -3 // PID K2
-#define PIDK3 0 // PID K3
+#define I1LAG 0 // Calibration value for how much I1 leads V1, Lead is positive
+#define I2LAG 0 // Calibration value for how much I2 leads V2
+#define I3LAG 0 // Calibration value for how much I3 leads V3
 
 
 // General constants
@@ -27,9 +24,12 @@
 #define SUPPLYMAXV 257 // Maximum RMS Volts that will be supplied
 #define PLLTIMERRANGE 800 // The max deviation from the average Timer1 value ~ +/- 5 Hz
 #define AVRCLOCKSPEED 16000000 // Clock speed of the ATmega328P in Hz
-#define PLLLOCKCOUNT 2000 // Number of samples for PLL to be considered locked ~ 4 seconds. N.B--Less than 255
+#define PLLLOCKCOUNT 200 // Number of samples for PLL to be considered locked ~ 4 seconds. N.B--Less than 255
 #define PLLLOCKRANGE 80 // ADC deviation from offset to enter locked state ~ 1/2 of the time between samples
-#define LOOPCYCLES 500 // Cycles to complete before sending data
+#define LOOPCYCLES 250 // Cycles to complete before sending data
+#define PIDKP 3 // PID KP
+#define PIDKI 1 // PID KI
+#define PIDKD 0 // PID KD
 
 
 // Calculated constants (at compile time)
@@ -46,6 +46,9 @@
 #define PLLTIMERMAX (PLLTIMERAVG+PLLTIMERRANGE) // Maximum Timer 1 value to start next set of measurements
 #define SAMPLEPERIOD (1000000/(SUPPLYFREQUENCY*NUMSAMPLES)) // Sampling period in microseconds
 #define LOOPSAMPLES (LOOPCYCLES*NUMSAMPLES) // Number of samples per transmit cycle.
+#define PIDK1 (PIDKP + PIDKI + PIDKD) // PID K1
+#define PIDK2 (-1*PIDKP - 2*PIDKD) // PID K2
+#define PIDK3 (PIDKD) // PID K3
 
 
 // Pin names and functions
@@ -160,6 +163,7 @@ float TV3=0;
 
 long V[NUMSAMPLES];
 int I[NUMSAMPLES];
+int E[50];
 
 
 /*  This will synchronize the timer to the V1 frequency and perform all needed calculations at the end of each cycle
@@ -335,15 +339,13 @@ void switchrelays (){
 void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
-    // Change PLL COunter back to 200
 
-    /*
+
+
     Serial.print("V1rms: ");
     Serial.println(V1rms);
-
     Serial.print("I1rms: ");
     Serial.println(I1rms);
-
     Serial.print("Power Factor 1: ");
     Serial.println(PowerFactor1);
     Serial.print("Frequency: ");
@@ -359,14 +361,15 @@ void sendresults(){
     Serial.print("Testvalue3: ");
     Serial.println(TV3);
     Serial.println(" ");
-    */
+
+    /*
     Serial.println("V               I");
     for (int i = 0; i < NUMSAMPLES; ++i) {
         Serial.print(V[i]);
         Serial.print("               ");
         Serial.println(I[i]);
     }
-
+    */
 
 }
 
