@@ -504,13 +504,13 @@ ISR(ADC_vect){
             }
             // Apply phase correction and calculate
             if (I1PhaseShift>=0) { // Current lags voltage: Interpolate voltage to previous current
-                PhaseShiftedV = ((((long)NewV1-PrevV1)*(I1PhaseShift)*SAMPLEPERIOD/TimerCount)>>6) + PrevV1;
+                PhaseShiftedV = ((((long)NewV1-PrevV1)*(I1PhaseShift)/TimerCount)) + PrevV1;
                 SumP1 += (PhaseShiftedV*PrevI1);
                 SumV1Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI1Squared += (PrevI1*PrevI1);
             }
             if (I1PhaseShift<0){ // Current leads voltage: Interpolate voltage to new current
-                PhaseShiftedV = ((((long)NewV1-PrevV1)*(I1PhaseShift+1)*SAMPLEPERIOD/TimerCount)>>6) + PrevV1;
+                PhaseShiftedV = ((((long)NewV1-PrevV1)*(I1PhaseShift)/TimerCount)) + NewV1;
                 SumP1 += (PhaseShiftedV*NewI1);
                 SumV1Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI1Squared += (NewI1*NewI1);
