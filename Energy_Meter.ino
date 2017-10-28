@@ -9,9 +9,9 @@
 #define I1CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I2CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
 #define I3CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
-#define I1LAG 1 // Calibration value for how much I1 lags V1, Lag is positive
-#define I2LAG 1 // Calibration value for how much I2 lags V2
-#define I3LAG 1 // Calibration value for how much I3 lags V3
+#define I1LAG 2500 // Calibration value for how much I1 leads V1, Lead is positive
+#define I2LAG 2500 // Calibration value for how much I2 lags V2
+#define I3LAG 2500 // Calibration value for how much I3 lags V3
 #define PIDK1 4 // PID K1
 #define PIDK2 -3 // PID K2
 #define PIDK3 0 // PID K3
@@ -29,7 +29,7 @@
 #define AVRCLOCKSPEED 16000000 // Clock speed of the ATmega328P in Hz
 #define PLLLOCKCOUNT 2000 // Number of samples for PLL to be considered locked ~ 4 seconds. N.B--Less than 255
 #define PLLLOCKRANGE 80 // ADC deviation from offset to enter locked state ~ 1/2 of the time between samples
-#define LOOPCYCLES 100 // Cycles to complete before sending data
+#define LOOPCYCLES 500 // Cycles to complete before sending data
 
 
 // Calculated constants (at compile time)
@@ -157,6 +157,9 @@ byte Relay3State=0;
 float TV1=0;
 float TV2=0;
 float TV3=0;
+
+long V[NUMSAMPLES];
+int I[NUMSAMPLES];
 
 
 /*  This will synchronize the timer to the V1 frequency and perform all needed calculations at the end of each cycle
@@ -334,7 +337,7 @@ void sendresults(){
     // todo Radio communication to raspberry PI
     // Change PLL COunter back to 200
 
-
+    /*
     Serial.print("V1rms: ");
     Serial.println(V1rms);
 
@@ -356,6 +359,13 @@ void sendresults(){
     Serial.print("Testvalue3: ");
     Serial.println(TV3);
     Serial.println(" ");
+    */
+    Serial.println("V               I");
+    for (int i = 0; i < NUMSAMPLES; ++i) {
+        Serial.print(V[i]);
+        Serial.print("               ");
+        Serial.println(I[i]);
+    }
 
 
 }
@@ -489,7 +499,7 @@ ISR(ADC_vect){
             PrevI1 = NewI1;
             NewI1 =  ADCValue - I1Offset;
 
-            // Store first positive reading for filter calculations and mark where filter should be updated
+            /* Store first positive reading for filter calculations and mark where filter should be updated
             if ((NewI1>=0)&&(PrevI1<0)) {
                 I1Zero = NewI1;
                 I1FilterPoint = SampleNum + (NUMSAMPLES/2);
@@ -502,19 +512,30 @@ ISR(ADC_vect){
                 FilterI1Offset += (I1Zero+NewI1)>>1;
                 I1Offset=(int)((FilterI1Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
+            */
+            FilterI1Offset += (NewI1);  // update the filter
+            I1Offset=(int)((FilterI1Offset+FILTERROUNDING)>>FILTERSHIFT);
+
             // Apply phase correction and calculate
-            if (I1PhaseShift>=0) { // Current lags voltage: Interpolate voltage to previous current
+            if (I1PhaseShift>=0) { // Current leads voltage: Interpolate voltage to previous current
                 PhaseShiftedV = ((((long)NewV1-PrevV1)*(I1PhaseShift)/TimerCount)) + PrevV1;
                 SumP1 += (PhaseShiftedV*PrevI1);
                 SumV1Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI1Squared += (PrevI1*PrevI1);
+                //V[SampleNum] = PhaseShiftedV;
+                //I[SampleNum] = PrevI1;
             }
-            if (I1PhaseShift<0){ // Current leads voltage: Interpolate voltage to new current
+            if (I1PhaseShift<0){ // Current lags voltage: Interpolate voltage to new current
                 PhaseShiftedV = ((((long)NewV1-PrevV1)*(I1PhaseShift)/TimerCount)) + NewV1;
                 SumP1 += (PhaseShiftedV*NewI1);
                 SumV1Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI1Squared += (NewI1*NewI1);
+                //V[SampleNum] = PhaseShiftedV;
+                //I[SampleNum] = NewI1;
             }
+            V[SampleNum] = NewV1;
+            I[SampleNum] = NewI1;
+
             break;
 
         case V2PIN: // V2 Just completed
@@ -558,13 +579,13 @@ ISR(ADC_vect){
                 I2Offset=(int)((FilterI2Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
             // Apply phase correction and calculate
-            if (I2PhaseShift>=0) { // Current lags voltage: Interpolate voltage to previous current
+            if (I2PhaseShift>=0) { // Current leads voltage: Interpolate voltage to previous current
                 PhaseShiftedV = ((((long)NewV2-PrevV2)*(I2PhaseShift)/TimerCount)) + PrevV2;
                 SumP2 += (PhaseShiftedV*PrevI2);
                 SumV2Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI2Squared += (PrevI2*PrevI2);
             }
-            if (I2PhaseShift<0){ // Current leads voltage: Interpolate voltage to new current
+            if (I2PhaseShift<0){ // Current lags voltage: Interpolate voltage to new current
                 PhaseShiftedV = ((((long)NewV2-PrevV2)*(I2PhaseShift)/TimerCount)) + NewV2;
                 SumP2 += (PhaseShiftedV*NewI2);
                 SumV2Squared += (PhaseShiftedV*PhaseShiftedV);
@@ -613,13 +634,13 @@ ISR(ADC_vect){
                 I3Offset=(int)((FilterI3Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
             // Apply phase correction and calculate
-            if (I3PhaseShift>=0) { // Current lags voltage: Interpolate voltage to previous current
+            if (I3PhaseShift>=0) { // Current leads voltage: Interpolate voltage to previous current
                 PhaseShiftedV = ((((long)NewV3-PrevV3)*(I3PhaseShift)/TimerCount)) + PrevV3;
                 SumP3 += (PhaseShiftedV*PrevI3);
                 SumV3Squared += (PhaseShiftedV*PhaseShiftedV);
                 SumI3Squared += (PrevI3*PrevI3);
             }
-            if (I3PhaseShift<0){ // Current leads voltage: Interpolate voltage to new current
+            if (I3PhaseShift<0){ // Current lsgs voltage: Interpolate voltage to new current
                 PhaseShiftedV = ((((long)NewV3-PrevV3)*(I3PhaseShift)/TimerCount)) + NewV3;
                 SumP3 += (PhaseShiftedV*NewI3);
                 SumV3Squared += (PhaseShiftedV*PhaseShiftedV);
