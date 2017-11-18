@@ -4,7 +4,7 @@
 //todo Project description
 
 // System specific constants
-#define V1CAL 246 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
+#define V1CAL 249 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
 #define V2CAL 246 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
 #define V3CAL 246 // Calculated value is 230:10.5 for transformer x 11:1 for resistor divider = 241
 #define I1CAL 90.65 // Calculated value is 100A:0.1A for transformer / 11 Ohms for resistor = 91
@@ -14,7 +14,7 @@
 #define I2LAG 0 // Calibration value for how much I2 leads V2
 #define I3LAG 0 // Calibration value for how much I3 leads V3
 #define DEVICEID 001 // This needs to be unique to this device
-#define IMPORTEXPORT 1 //  Change this to -1 to to change the import export direction
+#define IMPORTEXPORT -1 //  Change this to -1 to to change the import export direction
 
 
 // General constants
@@ -147,7 +147,7 @@ float PowerFactor3=0;
 float Frequency=0;
 
 // Available Units in mWh
-long Units1=0;
+long Units1=10000;
 long Units2=0;
 long Units3=0;
 long UnitsUsed1=0;
@@ -343,20 +343,21 @@ void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
 
-    StaticJsonBuffer<200> jsonBuffer;
+    StaticJsonBuffer<800> jsonBuffer;
     JsonObject& JsonOutput = jsonBuffer.createObject();
 
     JsonOutput["ID"] = DEVICEID;
     JsonOutput["Frequency"] = Frequency;
     JsonOutput["PLL"] = PllUnlocked;
-    JsonObject& Channel1 = JsonOutput.createNestedObject("Channel1");
-    Channel1["VRms"] = V1rms;
-    Channel1["IRms"] = I1rms;
-    Channel1["PowerFactor"] = PowerFactor1;
-    Channel1["PImport"] = RealPower1Import;
-    Channel1["PExport"] = RealPower1Export;
-    Channel1["UnitsUsed"] = UnitsUsed1;
-    Channel1["Units"] = Units1;
+    JsonOutput["V1"] = V1rms;
+    JsonOutput["I1"] = I1rms;
+    JsonOutput["PowerFactor1"] = PowerFactor1;
+    JsonOutput["PImport1"] = RealPower1Import;
+    JsonOutput["PExport1"] = RealPower1Export;
+    JsonOutput["UnitsUsed1"] = UnitsUsed1;
+    JsonOutput["Units1"] = Units1;
+
+
 
 
 
