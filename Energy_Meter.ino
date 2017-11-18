@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <lib/ArduinoJson.h>
+#include <lib/ArduinoJson-v5.11.2.h
 
 //todo Project description
 
@@ -341,6 +341,17 @@ void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
 
+    StaticJsonBuffer<200> jsonBuffer;
+    JsonObject& JsonOutput = jsonBuffer.createObject();
+
+    JsonOutput["V1Rms"] = V1rms;
+    JsonOutput["I1Rms"] = I1rms;
+    JsonOutput["PF1"] = PowerFactor1;
+    JsonOutput["Frequency"] = Frequency;
+    JsonOutput["PLL"] = PllUnlocked;
+
+    JsonOutput.printTo(Serial);
+    Serial.println();
 
 
 
