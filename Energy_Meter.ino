@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <lib/ArduinoJson-v5.11.2.h
+#include <lib/ArduinoJson-v5.11.2.h>
 
 //todo Project description
 
@@ -13,6 +13,8 @@
 #define I1LAG 0 // Calibration value for how much I1 leads V1, Lead is positive
 #define I2LAG 0 // Calibration value for how much I2 leads V2
 #define I3LAG 0 // Calibration value for how much I3 leads V3
+#define DEVICEID 001 // This needs to be unique to this device
+#define IMPORTEXPORT 1 //  Change this to -1 to to change the import export direction
 
 
 // General constants
@@ -210,9 +212,9 @@ void pllcalcs (int NewV1){
         CycleI1Squared = SumI1Squared;
         CycleI2Squared = SumI2Squared;
         CycleI3Squared = SumI3Squared;
-        CycleP1 = SumP1;
-        CycleP2 = SumP2;
-        CycleP3 = SumP3;
+        CycleP1 = (SumP1 * IMPORTEXPORT);
+        CycleP2 = (SumP2 * IMPORTEXPORT);
+        CycleP3 = (SumP3 * IMPORTEXPORT);
         //Clear the old cycle variables
         SumV1Squared = 0;
         SumV2Squared = 0;
@@ -344,11 +346,19 @@ void sendresults(){
     StaticJsonBuffer<200> jsonBuffer;
     JsonObject& JsonOutput = jsonBuffer.createObject();
 
-    JsonOutput["V1Rms"] = V1rms;
-    JsonOutput["I1Rms"] = I1rms;
-    JsonOutput["PF1"] = PowerFactor1;
+    JsonOutput["ID"] = DEVICEID;
     JsonOutput["Frequency"] = Frequency;
     JsonOutput["PLL"] = PllUnlocked;
+    JsonObject& Channel1 = JsonOutput.createNestedObject("Channel1");
+    Channel1["VRms"] = V1rms;
+    Channel1["IRms"] = I1rms;
+    Channel1["PowerFactor"] = PowerFactor1;
+    Channel1["PImport"] = RealPower1Import;
+    Channel1["PExport"] = RealPower1Export;
+    Channel1["UnitsUsed"] = UnitsUsed1;
+    Channel1["Units"] = Units1;
+
+
 
     JsonOutput.printTo(Serial);
     Serial.println();
