@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <lib/ArduinoJson.h>
 
 //todo Project description
 
@@ -342,6 +343,8 @@ void sendresults(){
 
 
 
+
+    /*
     Serial.print("V1rms: ");
     Serial.println(V1rms);
     Serial.print("I1rms: ");
@@ -362,7 +365,7 @@ void sendresults(){
     Serial.println(TV3);
     Serial.println(" ");
 
-    /*
+
     Serial.println("V               I");
     for (int i = 0; i < NUMSAMPLES; ++i) {
         Serial.print(V[i]);
@@ -384,8 +387,10 @@ void setup() {
     pinMode(PLLLOCKEDPIN,OUTPUT);
     digitalWrite(PLLLOCKEDPIN,LOW);
 
-    // Start Serial
+    // Start Serial and wait for it to initialize
     Serial.begin(9600);
+    while (!Serial) {
+    }
 
     // Clear the last 3 bits and change prescaler to 64 = 250kHz
     ADCSRA &= 0xf8;
