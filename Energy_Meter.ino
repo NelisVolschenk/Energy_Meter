@@ -147,7 +147,7 @@ float PowerFactor3=0;
 float Frequency=0;
 
 // Available Units in mWh
-long Units1=10000;
+long Units1=1000000000;
 long Units2=0;
 long Units3=0;
 long UnitsUsed1=0;
