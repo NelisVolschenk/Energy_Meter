@@ -343,6 +343,8 @@ void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
 
+    /*
+
     StaticJsonBuffer<800> jsonBuffer;
     JsonObject& JsonOutput = jsonBuffer.createObject();
 
@@ -366,7 +368,7 @@ void sendresults(){
 
 
 
-    /*
+
     Serial.print("V1rms: ");
     Serial.println(V1rms);
     Serial.print("I1rms: ");
@@ -410,7 +412,7 @@ void setup() {
     digitalWrite(PLLLOCKEDPIN,LOW);
 
     // Start Serial and wait for it to initialize
-    Serial.begin(9600);
+    Serial.begin(500000);
     while (!Serial) {
     }
 
@@ -519,6 +521,11 @@ ISR(ADC_vect){
                 FilterV1Offset += (V1Zero+NewV1)>>1;
                 V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
+            Serial.println('V');
+            Serial.println(ADCValue);
+
+
+
             break;
 
 
@@ -566,6 +573,8 @@ ISR(ADC_vect){
             V[SampleNum] = NewV1;
             I[SampleNum] = NewI1;
 
+            Serial.println('I');
+            Serial.println(ADCValue);
             break;
 
         case V2PIN: // V2 Just completed
