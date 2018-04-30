@@ -342,9 +342,7 @@ void switchrelays (){
 void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
-
     /*
-
     StaticJsonBuffer<800> jsonBuffer;
     JsonObject& JsonOutput = jsonBuffer.createObject();
 
@@ -412,7 +410,7 @@ void setup() {
     digitalWrite(PLLLOCKEDPIN,LOW);
 
     // Start Serial and wait for it to initialize
-    Serial.begin(500000);
+    Serial.begin(9600);
     while (!Serial) {
     }
 
@@ -521,10 +519,8 @@ ISR(ADC_vect){
                 FilterV1Offset += (V1Zero+NewV1)>>1;
                 V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
-            Serial.println('V');
-            Serial.println(ADCValue);
-
-
+            Serial.print('{"V":');
+            Serial.print(ADCValue);
 
             break;
 
@@ -573,8 +569,9 @@ ISR(ADC_vect){
             V[SampleNum] = NewV1;
             I[SampleNum] = NewI1;
 
-            Serial.println('I');
-            Serial.println(ADCValue);
+            Serial.print(', "I":');
+            Serial.print(ADCValue);
+            Serial.println('}');
             break;
 
         case V2PIN: // V2 Just completed
