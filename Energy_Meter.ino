@@ -410,7 +410,7 @@ void setup() {
     digitalWrite(PLLLOCKEDPIN,LOW);
 
     // Start Serial and wait for it to initialize
-    Serial.begin(9600);
+    Serial.begin(500000);
     while (!Serial) {
     }
 
