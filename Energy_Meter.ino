@@ -339,6 +339,19 @@ void switchrelays (){
 
 }
 
+void sendjson(int vadc, int iadc){
+
+    StaticJsonBuffer<50> jsonBuffer;
+    JsonObject& JsonOutput = jsonBuffer.createObject();
+
+    JsonOutput["V"] = vadc;
+    JsonOutput["I"] = iadc;
+
+    JsonOutput.printTo(Serial);
+    Serial.println();
+
+}
+
 void sendresults(){
     // Radio communication
     // todo Radio communication to raspberry PI
@@ -485,6 +498,10 @@ ISR(ADC_vect){
     static byte I2FilterPoint=0;
     static byte I3FilterPoint=0;
 
+    // Temporary for quick serial comm
+    static int VAdc=0;
+    static String SerMsg;
+
     // Other variables
     int ADCValue=0;
     long PhaseShiftedV=0;
@@ -519,8 +536,8 @@ ISR(ADC_vect){
                 FilterV1Offset += (V1Zero+NewV1)>>1;
                 V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
             }
-            Serial.print('{"V":');
-            Serial.print(ADCValue);
+
+            VAdc = ADCValue;
 
             break;
 
@@ -566,12 +583,12 @@ ISR(ADC_vect){
                 //V[SampleNum] = PhaseShiftedV;
                 //I[SampleNum] = NewI1;
             }
+
             V[SampleNum] = NewV1;
             I[SampleNum] = NewI1;
 
-            Serial.print(', "I":');
-            Serial.print(ADCValue);
-            Serial.println('}');
+            sendjson(VAdc,ADCValue);
+
             break;
 
         case V2PIN: // V2 Just completed
