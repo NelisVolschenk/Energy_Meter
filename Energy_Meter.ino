@@ -341,11 +341,13 @@ void switchrelays (){
 
 void sendjson(int vadc, int iadc){
 
-    StaticJsonBuffer<50> jsonBuffer;
+    StaticJsonBuffer<100> jsonBuffer;
     JsonObject& JsonOutput = jsonBuffer.createObject();
 
     JsonOutput["V"] = vadc;
     JsonOutput["I"] = iadc;
+    JsonOutput["T"] = OCR1A;
+
 
     JsonOutput.printTo(Serial);
     Serial.println();
