@@ -176,7 +176,9 @@ int E[50];
 void pllcalcs (int NewV1){
 
     // Variables that persist between loops
-    static int e0=0, e1=0,e2=0;
+    static int e0=0;
+    static int e1=0;
+    static int e2=0;
 
     // Update the timer value and PLL locked counter at the start of every cycle
     if (SampleNum == 0){
@@ -586,10 +588,18 @@ ISR(ADC_vect){
                 //I[SampleNum] = NewI1;
             }
 
-            V[SampleNum] = NewV1;
-            I[SampleNum] = NewI1;
+            V[SampleNum] = VAdc;
+            I[SampleNum] = ADCValue;
 
-            sendjson(VAdc,ADCValue);
+            if (SampleNum == NUMSAMPLES - 1){
+                noInterrupts();
+                for (int i=0; i < NUMSAMPLES; i++){
+                    sendjson(V[i],I[i]);
+                }
+                interrupts();
+            }
+
+
 
             break;
 
