@@ -253,6 +253,111 @@ void pllcalcs (int NewV1){
 }
 
 
+void addcycle () {
+
+    TotalV1Squared += CycleV1Squared;
+    TotalV2Squared += CycleV2Squared;
+    TotalV3Squared += CycleV3Squared;
+    TotalI1Squared += CycleI1Squared;
+    TotalI2Squared += CycleI2Squared;
+    TotalI3Squared += CycleI3Squared;
+    if (CycleP1>=0){
+        TotalP1Import += CycleP1;
+    } else {
+        TotalP1Export -= CycleP1;
+    }
+    if (CycleP2>=0){
+        TotalP2Import += CycleP2;
+    } else {
+        TotalP2Export -= CycleP2;
+    }
+    if (CycleP3>=0){
+        TotalP3Import += CycleP3;
+    } else {
+        TotalP3Export -= CycleP3;
+    }
+    SumTimerCount += (OCR1A+1);
+
+    CycleCount++;
+    NewCycle = false;
+}
+
+
+void calculateVIPF(){
+    //todo VOltage range
+
+    float TotalTime=0;
+
+    V1rms = V1RATIO * sqrt(((float)TotalV1Squared) / LOOPSAMPLES);
+    V2rms = V2RATIO * sqrt(((float)TotalV2Squared) / LOOPSAMPLES);
+    V3rms = V3RATIO * sqrt(((float)TotalV3Squared) / LOOPSAMPLES);
+    I1rms = I1RATIO * sqrt(((float)TotalI1Squared) / LOOPSAMPLES);
+    I2rms = I2RATIO * sqrt(((float)TotalI2Squared) / LOOPSAMPLES);
+    I3rms = I3RATIO * sqrt(((float)TotalI3Squared) / LOOPSAMPLES);
+
+    RealPower1Import = (V1RATIO * I1RATIO * (float)TotalP1Import) / LOOPSAMPLES;
+    RealPower2Import = (V2RATIO * I2RATIO * (float)TotalP2Import) / LOOPSAMPLES;
+    RealPower3Import = (V3RATIO * I3RATIO * (float)TotalP3Import) / LOOPSAMPLES;
+    RealPower1Export = (V1RATIO * I1RATIO * (float)TotalP1Export) / LOOPSAMPLES;
+    RealPower2Export = (V2RATIO * I2RATIO * (float)TotalP2Export) / LOOPSAMPLES;
+    RealPower3Export = (V3RATIO * I3RATIO * (float)TotalP3Export) / LOOPSAMPLES;
+    ApparentPower1 = V1rms * I1rms;
+    ApparentPower2 = V2rms * I2rms;
+    ApparentPower3 = V3rms * I3rms;
+    PowerFactor1 = (RealPower1Import + RealPower1Export) / ApparentPower1;
+    PowerFactor2 = (RealPower2Import + RealPower2Export) / ApparentPower2;
+    PowerFactor3 = (RealPower3Import + RealPower3Export) / ApparentPower3;
+
+    TV1 = RealPower1Import;
+    TV2 = RealPower1Export;
+    TV3 = ApparentPower1;
+
+    TotalTime = ((float)SumTimerCount * NUMSAMPLES) / AVRCLOCKSPEED; // Time in seconds
+    Frequency = (float)CycleCount / TotalTime;
+
+    // Calcualte the units used, 0.5 added for correct rounding
+    UnitsUsed1 = long((RealPower1Import * TotalTime / 3.6) + 0.5);
+    UnitsUsed2 = long((RealPower2Import * TotalTime / 3.6) + 0.5);
+    UnitsUsed3 = long((RealPower3Import * TotalTime / 3.6) + 0.5);
+
+    // Update The unit counter
+    Units1 -= UnitsUsed1;
+    Units2 -= UnitsUsed2;
+    Units3 -= UnitsUsed3;
+
+    // Clear the counters
+    TotalV1Squared = 0;
+    TotalV2Squared = 0;
+    TotalV3Squared = 0;
+    TotalI1Squared = 0;
+    TotalI2Squared = 0;
+    TotalI3Squared = 0;
+    TotalP1Import = 0;
+    TotalP2Import = 0;
+    TotalP3Import = 0;
+    TotalP1Export = 0;
+    TotalP2Export = 0;
+    TotalP3Export = 0;
+    SumTimerCount = 0;
+    CycleCount = 0;
+
+}
+
+
+void switchrelays (){
+
+    // Set relay states
+    digitalWrite(RELAY1PIN,Relay1State);
+    digitalWrite(RELAY2PIN,Relay2State);
+    digitalWrite(RELAY3PIN,Relay3State);
+    if (PllUnlocked==0) {
+        digitalWrite(PLLLOCKEDPIN, HIGH);
+    } else {
+        digitalWrite(PLLLOCKEDPIN,LOW);
+    }
+
+}
+
 void sendjson(int vadc, int iadc){
 
     StaticJsonBuffer<100> jsonBuffer;
@@ -311,6 +416,16 @@ void loop() {
         Sending = false;
         Dataset = 0;
     }
+
+    // Calculate averages and transmit data to base station
+    if (NewCycle) {
+        addcycle();
+    }
+    if (CycleCount >= LOOPCYCLES){
+        calculateVIPF();
+        switchrelays();
+        //sendresults();
+    }
 }
 
 // Timer interrupt
@@ -326,8 +441,8 @@ ISR(ADC_vect){
     // Variables that persist between conversions
     static int NewV1=0;
     static int NewI1=0;
-    static long FilterV1Offset=512L<<13;
-    static long FilterI1Offset=512L<<13;
+    static long FilterV1Offset=FILTEROFFSET;
+    static long FilterI1Offset=FILTEROFFSET;
 
     // Temporary for quick serial comm
     static int VAdc=0;
