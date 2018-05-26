@@ -300,9 +300,11 @@ ISR(ADC_vect){
 
     // Variables that persist between conversions
     static int NewV1=0;
+    static long FilterV1Offset=512L<<13;
 
     // Temporary for quick serial comm
     static int VAdc=0;
+    String newline;
 
     // Other variables
     int ADCValue=0;
@@ -320,6 +322,10 @@ ISR(ADC_vect){
             // Update variables for V1
             NewV1 =  ADCValue - V1Offset;
 
+            // Update the Low Pass filter
+            FilterV1Offset += (ADCValue-V1Offset);  // update the filter
+            V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
+
             VAdc = ADCValue;
 
             break;
@@ -335,7 +341,7 @@ ISR(ADC_vect){
                 for (int i=0; i < NUMSAMPLES; i++){
                     sendjson(V[i],I[i]);
                 }
-                String newline;
+
                 newline = "{\"V\":\"New\"}";
                 Serial.println(newline);
                 interrupts();
