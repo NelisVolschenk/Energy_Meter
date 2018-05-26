@@ -243,8 +243,6 @@ void sendjson(int vadc, int iadc){
 
     JsonOutput["V"] = vadc;
     JsonOutput["I"] = iadc;
-    JsonOutput["T"] = OCR1A;
-
 
     JsonOutput.printTo(Serial);
     Serial.println();
@@ -323,7 +321,7 @@ ISR(ADC_vect){
             NewV1 =  ADCValue - V1Offset;
 
             // Update the Low Pass filter
-            FilterV1Offset += (ADCValue-V1Offset);  // update the filter
+            FilterV1Offset += (NewV1);
             V1Offset=(int)((FilterV1Offset+FILTERROUNDING)>>FILTERSHIFT);
 
             VAdc = ADCValue;
@@ -338,12 +336,14 @@ ISR(ADC_vect){
 
             if (SampleNum == NUMSAMPLES - 1){
                 noInterrupts();
+                newline = "{\"V\":\"New\"}";
+                Serial.println(newline);
+                Serial.println(OCR1A);
+                Serial.println(PllUnlocked);
                 for (int i=0; i < NUMSAMPLES; i++){
                     sendjson(V[i],I[i]);
                 }
 
-                newline = "{\"V\":\"New\"}";
-                Serial.println(newline);
                 interrupts();
             }
 
