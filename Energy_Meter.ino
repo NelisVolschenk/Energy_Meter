@@ -164,9 +164,13 @@ float TV1=0;
 float TV2=0;
 float TV3=0;
 
-long V[NUMSAMPLES];
-int I[NUMSAMPLES];
+long V[80];
+int I[80];
 int E[50];
+int Sending=0;
+int CollectData=1;
+int Dataset=0;
+int extendedsamplenum=0;
 
 
 /*  This will synchronize the timer to the V1 frequency and perform all needed calculations at the end of each cycle
@@ -193,6 +197,11 @@ void pllcalcs (int NewV1){
         TimerCount += (e0 * PIDK1 + e1 * PIDK2 + e2 * PIDK3);
         TimerCount = constrain(TimerCount, PLLTIMERMIN, PLLTIMERMAX);
 
+        //Serial.println(NewV1);
+        //Serial.println(TimerCount);
+        //Serial.println(PllUnlocked);
+        //Serial.println("End");
+
         // Check if PLL is in lock range and decrement the counter if it is, otherwise set counter to max
         if (abs(NewV1)>PLLLOCKRANGE){
             PllUnlocked = PLLLOCKCOUNT;
@@ -206,6 +215,14 @@ void pllcalcs (int NewV1){
 
     // Last sample of the cycle, perform all calculations and update the variables for the main loop.
     } else if (SampleNum == (NUMSAMPLES-1)) {
+
+        if (CollectData){
+            Dataset++;
+        }
+
+        if (Sending==false){
+            CollectData = true;
+        }
 
         // Update the Cycle Variables
         CycleV1Squared = SumV1Squared;
@@ -284,6 +301,16 @@ void setup() {
 
 void loop() {
 
+    if (Sending == true){
+        Serial.println("New Data");
+        Serial.println(PllUnlocked);
+        Serial.println(OCR1A);
+        for (int i=0; i < 80; i++){
+            sendjson(V[i],I[i]);
+        }
+        Sending = false;
+        Dataset = 0;
+    }
 }
 
 // Timer interrupt
@@ -298,7 +325,9 @@ ISR(ADC_vect){
 
     // Variables that persist between conversions
     static int NewV1=0;
+    static int NewI1=0;
     static long FilterV1Offset=512L<<13;
+    static long FilterI1Offset=512L<<13;
 
     // Temporary for quick serial comm
     static int VAdc=0;
@@ -331,20 +360,25 @@ ISR(ADC_vect){
 
         case I1PIN: // I1 Just completed
 
-            V[SampleNum] = VAdc;
-            I[SampleNum] = ADCValue;
+            // Update variables for V1
+            NewI1 =  ADCValue - I1Offset;
 
-            if (SampleNum == NUMSAMPLES - 1){
-                noInterrupts();
-                newline = "{\"V\":\"New\"}";
-                Serial.println(newline);
-                Serial.println(OCR1A);
-                Serial.println(PllUnlocked);
-                for (int i=0; i < NUMSAMPLES; i++){
-                    sendjson(V[i],I[i]);
+            // Update the Low Pass filter
+            FilterI1Offset += (NewI1);
+            I1Offset=(int)((FilterI1Offset+FILTERROUNDING)>>FILTERSHIFT);
+
+            if (CollectData) {
+                if (Dataset){
+                    extendedsamplenum = SampleNum + 40;
+                } else {
+                    extendedsamplenum = SampleNum;
                 }
-
-                interrupts();
+                V[extendedsamplenum] = VAdc;
+                I[extendedsamplenum] = ADCValue;
+                if ((SampleNum == NUMSAMPLES - 1)&&(Dataset)){
+                    CollectData = false;
+                    Sending = true;
+                }
             }
 
             pllcalcs(NewV1);
