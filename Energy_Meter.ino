@@ -326,8 +326,6 @@ ISR(ADC_vect){
 
 
         case I1PIN: // I1 Just completed
-            ADMUX = _BV(REFS0) | V2PIN; // Set ADC conversion to start on V2Pin
-            ADCSRA |= _BV(ADSC); // Start ADC conversion
 
             V[SampleNum] = VAdc;
             I[SampleNum] = ADCValue;
