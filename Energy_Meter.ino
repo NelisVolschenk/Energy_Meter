@@ -442,7 +442,7 @@ void loop() {
     if (CycleCount >= LOOPCYCLES){
         calculateVIPF();
         switchrelays();
-        //sendresults();
+        sendresults();
     }
 }
 
