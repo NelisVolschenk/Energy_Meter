@@ -213,7 +213,7 @@ void pllcalcs (int NewV1){
     // Last sample of the cycle, perform all calculations and update the variables for the main loop.
     } else if (SampleNum == (NUMSAMPLES-1)) {
 
-        /*
+
         if (CollectData){
             Dataset++;
         }
@@ -222,7 +222,7 @@ void pllcalcs (int NewV1){
             CollectData = true;
         }
 
-         */
+
         // Update the Cycle Variables
         CycleV1Squared = SumV1Squared;
         CycleV2Squared = SumV2Squared;
@@ -374,7 +374,7 @@ void sendjson(int vadc, int iadc){
 }
 
 void sendresults() {
-    StaticJsonBuffer<100> SendResultsBuffer;
+    StaticJsonBuffer<150> SendResultsBuffer;
     JsonObject& Output = SendResultsBuffer.createObject();
 
     Output["Vrms"] = V1rms;
