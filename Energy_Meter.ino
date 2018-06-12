@@ -523,8 +523,8 @@ ISR(ADC_vect){
                 }
             }
 
-            SumI1Squared += NewI1*NewI1;
-            SumP1 += NewV1*NewI1;
+            SumI1Squared += (long)NewI1*NewI1;
+            SumP1 += (long)NewV1*NewI1;
 
             pllcalcs(NewV1);
             break;
