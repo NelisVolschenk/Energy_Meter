@@ -213,7 +213,7 @@ void pllcalcs (int NewV1){
     // Last sample of the cycle, perform all calculations and update the variables for the main loop.
     } else if (SampleNum == (NUMSAMPLES-1)) {
 
-
+        /*
         if (CollectData){
             Dataset++;
         }
@@ -221,7 +221,7 @@ void pllcalcs (int NewV1){
         if (Sending==false){
             CollectData = true;
         }
-
+        */
 
         // Update the Cycle Variables
         CycleV1Squared = SumV1Squared;
