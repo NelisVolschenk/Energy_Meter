@@ -488,6 +488,8 @@ ISR(ADC_vect){
 
             VAdc = ADCValue;
 
+            SumV1Squared += NewV1*NewV1;
+
             break;
 
 
@@ -513,6 +515,9 @@ ISR(ADC_vect){
                     Sending = true;
                 }
             }
+
+            SumI1Squared += NewI1*NewI1;
+            SumP1 += NewV1*NewI1;
 
             pllcalcs(NewV1);
             break;
