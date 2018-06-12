@@ -147,12 +147,9 @@ float PowerFactor3=0;
 float Frequency=0;
 
 // Available Units in mWh
-long Units1=1000000000;
+long Units1=0;
 long Units2=0;
 long Units3=0;
-long UnitsUsed1=0;
-long UnitsUsed2=0;
-long UnitsUsed3=0;
 
 // State of relays
 byte Relay1State=0;
@@ -168,7 +165,7 @@ long V[80];
 int I[80];
 int E[50];
 int Sending=0;
-int CollectData=1;
+int CollectData=0;
 int Dataset=0;
 int extendedsamplenum=0;
 
@@ -216,6 +213,7 @@ void pllcalcs (int NewV1){
     // Last sample of the cycle, perform all calculations and update the variables for the main loop.
     } else if (SampleNum == (NUMSAMPLES-1)) {
 
+        /*
         if (CollectData){
             Dataset++;
         }
@@ -224,6 +222,7 @@ void pllcalcs (int NewV1){
             CollectData = true;
         }
 
+         */
         // Update the Cycle Variables
         CycleV1Squared = SumV1Squared;
         CycleV2Squared = SumV2Squared;
@@ -286,6 +285,9 @@ void addcycle () {
 void calculateVIPF(){
     //todo VOltage range
 
+    long UnitsUsed1=0;
+    long UnitsUsed2=0;
+    long UnitsUsed3=0;
     float TotalTime=0;
 
     V1rms = V1RATIO * sqrt(((float)TotalV1Squared) / LOOPSAMPLES);
@@ -321,9 +323,9 @@ void calculateVIPF(){
     UnitsUsed3 = long((RealPower3Import * TotalTime / 3.6) + 0.5);
 
     // Update The unit counter
-    Units1 -= UnitsUsed1;
-    Units2 -= UnitsUsed2;
-    Units3 -= UnitsUsed3;
+    Units1 += UnitsUsed1;
+    Units2 += UnitsUsed2;
+    Units3 += UnitsUsed3;
 
     // Clear the counters
     TotalV1Squared = 0;
@@ -371,6 +373,22 @@ void sendjson(int vadc, int iadc){
 
 }
 
+void sendresults() {
+    StaticJsonBuffer<100> SendResultsBuffer;
+    JsonObject& Output = SendResultsBuffer.createObject();
+
+    Output["Vrms"] = V1rms;
+    Output["Irms"] = I1rms;
+    Output["RealPower"] = RealPower1Import;
+    Output["ApparentPower"] = ApparentPower1;
+    Output["PowerFactor"] = PowerFactor1;
+    Output["PLL"] = PllUnlocked;
+    Output["Units"] = Units1;
+
+    Output.printTo(Serial);
+    Serial.println();
+
+}
 void setup() {
     // setup pins
     pinMode(RELAY1PIN,OUTPUT);
@@ -406,7 +424,7 @@ void setup() {
 
 void loop() {
 
-    if (Sending == true){
+    if (Sending){
         Serial.println("New Data");
         Serial.println(PllUnlocked);
         Serial.println(OCR1A);
