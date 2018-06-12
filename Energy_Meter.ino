@@ -146,7 +146,7 @@ float PowerFactor2=0;
 float PowerFactor3=0;
 float Frequency=0;
 
-// Available Units in mWh
+// Used Units in mWh
 long Units1=0;
 long Units2=0;
 long Units3=0;
@@ -310,10 +310,6 @@ void calculateVIPF(){
     PowerFactor2 = (RealPower2Import + RealPower2Export) / ApparentPower2;
     PowerFactor3 = (RealPower3Import + RealPower3Export) / ApparentPower3;
 
-    TV1 = RealPower1Import;
-    TV2 = RealPower1Export;
-    TV3 = ApparentPower1;
-
     TotalTime = ((float)SumTimerCount * NUMSAMPLES) / AVRCLOCKSPEED; // Time in seconds
     Frequency = (float)CycleCount / TotalTime;
 
@@ -326,6 +322,10 @@ void calculateVIPF(){
     Units1 += UnitsUsed1;
     Units2 += UnitsUsed2;
     Units3 += UnitsUsed3;
+
+    TV1 = UnitsUsed1;
+    TV2 = TotalTime;
+    TV3 = ApparentPower1;
 
     // Clear the counters
     TotalV1Squared = 0;
@@ -374,16 +374,17 @@ void sendjson(int vadc, int iadc){
 }
 
 void sendresults() {
-    StaticJsonBuffer<150> SendResultsBuffer;
+    StaticJsonBuffer<250> SendResultsBuffer;
     JsonObject& Output = SendResultsBuffer.createObject();
 
     Output["Vrms"] = V1rms;
     Output["Irms"] = I1rms;
     Output["RealPower"] = RealPower1Import;
-    Output["ApparentPower"] = ApparentPower1;
+    Output["Export"] = RealPower1Export;
     Output["PowerFactor"] = PowerFactor1;
-    //Output["PLL"] = PllUnlocked;
-    //Output["Units"] = Units1;
+    Output["PLL"] = PllUnlocked;
+    Output["Units"] = Units1;
+    Output["Frequency"] = Frequency;
 
     Output.printTo(Serial);
     Serial.println();
