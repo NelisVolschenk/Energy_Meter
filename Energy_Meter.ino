@@ -234,7 +234,7 @@ void pllcalcs (int NewV1){
         CycleP2 = (SumP2 * IMPORTEXPORT);
         CycleP3 = (SumP3 * IMPORTEXPORT);
         //Clear the old cycle variables
-        SumV1Squared = 0;
+        SumV1Squared = 0L;
         SumV2Squared = 0;
         SumV3Squared = 0;
         SumI1Squared = 0;
@@ -382,8 +382,8 @@ void sendresults() {
     Output["RealPower"] = RealPower1Import;
     Output["ApparentPower"] = ApparentPower1;
     Output["PowerFactor"] = PowerFactor1;
-    Output["PLL"] = PllUnlocked;
-    Output["Units"] = Units1;
+    //Output["PLL"] = PllUnlocked;
+    //Output["Units"] = Units1;
 
     Output.printTo(Serial);
     Serial.println();
@@ -469,6 +469,9 @@ ISR(ADC_vect){
     // Other variables
     int ADCValue=0;
 
+    // Testing
+    long Square;
+
     // Collect the result from the registers and combine
     ADCValue = ADCL;
     ADCValue |= ADCH<<8;
@@ -488,7 +491,11 @@ ISR(ADC_vect){
 
             VAdc = ADCValue;
 
-            SumV1Squared += NewV1*NewV1;
+            //Square = (long)NewV1*(long)NewV1;
+            SumV1Squared += (long)NewV1*NewV1;
+            //Serial.println(NewV1);
+            //Serial.println(Square);
+            //Serial.println();
 
             break;
 
