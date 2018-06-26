@@ -29,6 +29,7 @@
 #define AVRCLOCKSPEED 16000000 // Clock speed of the ATmega328P in Hz
 #define PLLLOCKCOUNT 200 // Number of samples for PLL to be considered locked ~ 4 seconds. N.B--Less than 255
 #define PLLLOCKRANGE 80 // ADC deviation from offset to enter locked state ~ 1/2 of the time between samples
+#define IMPORTEXPORTCYCLES 50 // Cycles to completete before accumulating import and export data
 #define LOOPCYCLES 250 // Cycles to complete before sending data
 #define PIDKP 3 // PID KP
 #define PIDKI 1 // PID KI
@@ -73,6 +74,7 @@ unsigned int TimerCount = PLLTIMERAVG; // Timer1 value
 byte SampleNum=0; // Sample counter in current cycle
 int PllUnlocked=PLLLOCKCOUNT; // Counter reaching zero when PLL is locked
 boolean NewCycle=false; // Flag for indicating a new cycle has started
+int ImportExportCycleCount=0; // Counter for cycles since last Import Export calculation
 int CycleCount=0; // Counter for number of cycles since last VIPF calculation
 long SumTimerCount=0; // Accumulator for total timer cycles elapsed since last VIPF calculation
 
@@ -118,6 +120,9 @@ long TotalV3Squared=0;
 long TotalI1Squared=0;
 long TotalI2Squared=0;
 long TotalI3Squared=0;
+long TotalP1=0;
+long TotalP2=0;
+long TotalP3=0;
 long TotalP1Import=0;
 long TotalP2Import=0;
 long TotalP3Import=0;
@@ -260,25 +265,37 @@ void addcycle () {
     TotalI1Squared += CycleI1Squared;
     TotalI2Squared += CycleI2Squared;
     TotalI3Squared += CycleI3Squared;
-    if (CycleP1>=0){
-        TotalP1Import += CycleP1;
-    } else {
-        TotalP1Export -= CycleP1;
-    }
-    if (CycleP2>=0){
-        TotalP2Import += CycleP2;
-    } else {
-        TotalP2Export -= CycleP2;
-    }
-    if (CycleP3>=0){
-        TotalP3Import += CycleP3;
-    } else {
-        TotalP3Export -= CycleP3;
-    }
+    TotalP1 += CycleP1;
+    TotalP1 += CycleP1;
+    TotalP1 += CycleP1;
+
     SumTimerCount += (OCR1A+1);
 
     CycleCount++;
+    ImportExportCycleCount++;
     NewCycle = false;
+}
+
+void calcImportExport () {
+    if (TotalP1>=0){
+        TotalP1Import += TotalP1;
+    } else {
+        TotalP1Export -= TotalP1;
+    }
+    TotalP1 = 0;
+    if (TotalP2>=0){
+        TotalP2Import += TotalP2;
+    } else {
+        TotalP2Export -= TotalP2;
+    }
+    TotalP2 = 0;
+    if (TotalP3>=0){
+        TotalP3Import += TotalP3;
+    } else {
+        TotalP3Export -= TotalP3;
+    }
+    TotalP3 = 0;
+    ImportExportCycleCount = 0;
 }
 
 
@@ -440,7 +457,13 @@ void loop() {
     if (NewCycle) {
         addcycle();
     }
+
+    if (ImportExportCycleCount >= IMPORTEXPORTCYCLES ) {
+        calcImportExport();
+    }
+
     if (CycleCount >= LOOPCYCLES){
+        calcImportExport();
         calculateVIPF();
         switchrelays();
         sendresults();
